@@ -7,7 +7,7 @@
     "unittest",
     "browser"
   ],
-  "version": "0.3.17",
+  "version": "0.6.8",
   "author": "Toby Ho <airportyh@gmail.com>",
   "repository": {
     "type": "git",
@@ -24,10 +24,9 @@
     "express": "~3.1.0",
     "mustache": "~0.4.0",
     "socket.io": "~0.9.13",
-    "winston": "~0.7.1",
     "charm": "~0.0.5",
-    "js-yaml": "~0.3.5",
-    "tap": "*",
+    "js-yaml": "~2.1.0",
+    "tap": "~0.4.4",
     "commander": "*",
     "glob": "~3.1.21",
     "async": "~0.2.7",
@@ -38,7 +37,9 @@
     "fileset": "~0.1.4",
     "growl": "~1.7.0",
     "consolidate": "~0.8.0",
-    "did_it_work": "~0.0.5"
+    "did_it_work": "~0.0.5",
+    "fireworm": "~0.6.0",
+    "npmlog": "~0.0.6"
   },
   "files": [
     "lib",
@@ -50,24 +51,24 @@
     "views"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/mocha --timeout 3000 tests/*_tests.js tests/*/*_tests.js",
+    "test": "./node_modules/.bin/mocha --timeout 3000 tests/*_tests.js tests/*/*_tests.js -R spec",
     "cover": "cover run ./node_modules/.bin/_mocha tests/*_tests.js tests/*/*_tests.js; cover report html; open cover_html/index.html"
   },
   "devDependencies": {
     "mocha": "*",
     "chai": "*",
-    "bufferstream": "*",
     "request": "~2.12.0",
     "jsdom": "~0.5.2",
     "bodydouble": "~0.1.1",
-    "ispy": "~0.1.1"
+    "ispy": "~0.1.1",
+    "concat-stream": "~1.0.0",
+    "sinon": "~1.7.3"
   },
   "bin": {
     "testem": "./testem.js"
   },
   "main": "./lib/api.js",
   "bundleDependencies": [
-    "tap",
     "express"
   ],
   "optionalDependencies": {}

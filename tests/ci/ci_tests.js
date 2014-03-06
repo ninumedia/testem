@@ -1,16 +1,13 @@
 var fs = require('fs')    
 var App = require('../../lib/ci')
-var TestReporter = require('../../lib/ci/test_reporter')
+var TestReporter = require('../../lib/ci/test_reporters/tap_reporter')
 var Config = require('../../lib/config')
 var bd = require('bodydouble')
 var mock = bd.mock
 var stub = bd.stub
 var path = require('path')
 var assert = require('chai').assert
-var log = require('winston')
 var Process = require('did_it_work')
-
-log.remove(log.transports.Console)
 
 describe('ci mode app', function(){
 
@@ -19,7 +16,7 @@ describe('ci mode app', function(){
       done()
     })
   })
-
+  
   it('runs them tests on node, nodetap, and browser', function(done){
     this.timeout(10000)
     var config = new Config('ci', {
@@ -70,61 +67,59 @@ describe('ci mode app', function(){
     })
   })
 
-  it('fails and returns exit code of 1', function(done){
+  it('allows passing in reporter from config', function(){
+    var fakeReporter = {}
     var config = new Config('ci', {
-      cwd: 'tests/fixtures/fail/',
-      port: 7359
-    }, {
-      launch_in_ci: ['phantomjs']
+      reporter: fakeReporter
     })
     var app = new App(config)
-    var reporter = stub(app, 'reporter', new TestReporter(true))
-    stub(app, 'cleanExit')
-    app.start()
-    app.cleanExit.once('call', function(){
-      assert(app.cleanExit.called, 'should have exited')
-      assert.equal(app.cleanExit.lastCall.args[0], 1)
-      done()
-    })
+    assert.strictEqual(app.reporter, fakeReporter)
   })
 
-  it('fails if before_tests fails', function(done){
-    var config = new Config('ci', {
-      file: 'tests/fixtures/hook_fail/testem.yml',
-      cwd: 'tests/fixtures/hook_fail/',
-      port: 7344
-    }, {
-      launch_in_ci: ['phantomjs']
-    })
-    config.read(function(){
-      var app = new App(config)
-      var reporter = stub(app, 'reporter', new TestReporter(true))
-      stub(app, 'cleanExit')
-      app.start()
-      app.cleanExit.once('call', function(){
-        assert(app.cleanExit.called, 'should have exited')
-        assert.equal(app.cleanExit.lastCall.args[0], 1)
-        done()
-      })
-    })
+  it('wrapUp reports error to reporter', function(){
+    var app = new App(new Config('ci'))
+    var reporter = new TestReporter(true)
+    stub(app, 'reporter', reporter)
+    app.wrapUp(new Error('blarg'))
+    assert.equal(reporter.total, 1)
+    assert.equal(reporter.pass, 0)
+    var result = reporter.results[0].result
+    assert.equal(result.name, 'Error')
+    assert.equal(result.error.message, 'blarg')
   })
 
-  it('fails if zero tests when fail_on_zero_tests', function(done){
-    var config = new Config('ci', {
-      cwd: 'tests/fixtures/zero_tests/',
-      port: 7344
-    }, {
-      fail_on_zero_tests: true,
-      launch_in_ci: ['phantomjs']
+  describe('getExitCode', function(){
+
+    it('returns 0 if all passed', function(){
+      var app = new App(new Config('ci'))
+      var reporter = { total: 1, pass: 1 }
+      stub(app, 'reporter', reporter)
+      assert.equal(app.getExitCode(), 0)
     })
-    var app = new App(config)
-    stub(app, 'reporter', new TestReporter(true))
-    stub(app, 'cleanExit')
-    app.start()
-    app.cleanExit.once('call', function(exitCode){
-      assert.equal(exitCode, 1)
-      done()
+
+    it('returns 1 if fails', function(){
+      var app = new App(new Config('ci'))
+      var reporter = { total: 1, pass: 0 }
+      stub(app, 'reporter', reporter)
+      assert.equal(app.getExitCode(), 1)
     })
+
+    it('returns 0 if no tests ran', function(){
+      var app = new App(new Config('ci'))
+      var reporter = { total: 0, pass: 0 }
+      stub(app, 'reporter', reporter)
+      assert.equal(app.getExitCode(), 0)
+    })
+
+    it('returns 1 if no tests and fail_on_zero_tests config is on', function(){
+      var app = new App(new Config('ci', {
+        fail_on_zero_tests: true
+      }))
+      var reporter = { total: 0, pass: 0 }
+      stub(app, 'reporter', reporter)
+      assert.equal(app.getExitCode(), 1)
+    })
+
   })
 
 })
@@ -156,6 +151,35 @@ describe('runHook', function(){
     app.runHook('on_start', function(){
       assert(app.Process.called, 'how come you dont call me?')
       assert.equal(app.Process.lastCall.args, 'launch nuclear-missile')
+      done()
+    })
+  })
+
+  it('runs hook with arguments', function(done){
+    var config = new Config('ci', null, {
+      on_start: 'launch <type> nuclear-missile'
+    })
+    var app = new App(config)
+    stub(app, 'Process').returns(fakeP)
+    app.runHook('on_start', {type: 'soviet'}, function(){
+      assert(app.Process.called, 'how come you dont call me?')
+      assert.equal(app.Process.lastCall.args, 'launch soviet nuclear-missile')
+      done()
+    })
+  })
+
+  it('runs javascript hook', function(done){
+    var config = new Config('ci', null, {
+      port: 777,
+      on_start: function (cfg, data, callback) {
+        assert.equal(cfg.get('port'), 777)
+        assert.equal(data.viva, 'la revolucion')
+        callback(1)
+      }
+    })
+    var app = new App(config)
+    app.runHook('on_start', {viva: 'la revolucion'}, function(error){
+      assert.equal(error, 1)
       done()
     })
   })

@@ -17,6 +17,7 @@ function busterAdapter(socket){
         failed: 0
         , passed: 0
         , total: 0
+        , pending: 0
         , tests: []
     }
 
@@ -36,6 +37,7 @@ function busterAdapter(socket){
             passed: 1
             , failed: 0
             , total: 1
+            , pending: 0
             , id: id++
             , name: currContext ? (currContext.name + ' ' + test.name) : test.name
         }
@@ -49,12 +51,13 @@ function busterAdapter(socket){
             passed: 0
             , failed: 1
             , total: 1
+            , pending: 0
             , id: id++
             , name: currContext ? (currContext.name + ' ' + test.name) : test.name
             , items: [{    
                 passed: false,
                 message: test.error.message,
-                stacktrace: test.error.stack ? test.error.stack : undefined
+                stack: test.error.stack ? test.error.stack : undefined
             }]
         }
         emit('test-result', test)
@@ -62,10 +65,24 @@ function busterAdapter(socket){
         results.total++
     }
 
+    function onDeferred(test){
+        var test = {
+            passed: 0
+            , failed: 0
+            , total: 1
+            , pending: 1
+            , id: id++
+            , name: currContext ? (currContext.name + ' ' + test.name) : test.name
+        }
+        emit('test-result', test)
+        results.total++
+    }
+
     runner.on('test:success', onSuccess)
     runner.on('test:failure', onFailure)
     runner.on('test:error', onFailure)
     runner.on('test:timeout', onFailure)
+    runner.on('test:deferred', onDeferred)
 
     runner.on('suite:end', function(){
         emit('all-test-results', results)

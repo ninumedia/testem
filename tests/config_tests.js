@@ -28,6 +28,19 @@ describe('Config', function(){
 		expect(config.get('file')).to.equal(progOptions.file)
 	})
 
+	describe('accepts empty config file', function(){
+		var config
+		beforeEach(function(done){
+			var progOptions = {framework: 'mocha', src_files: 'impl.js,tests.js'}
+			config = new Config('dev', progOptions)
+			config.read(done)
+		})
+		it('gets properties from config file', function(){
+			expect(config.get('framework')).to.equal('mocha')
+			expect(String(config.get('src_files'))).to.equal('impl.js,tests.js')
+		})
+	})
+
 	describe('read yaml config file', function(){
 		beforeEach(function(done){
 			config.read(done)
@@ -51,6 +64,21 @@ describe('Config', function(){
 		beforeEach(function(done){
 			var progOptions = {
 				file: __dirname + '/testem.json'
+			}
+			config = new Config('dev', progOptions)
+			config.read(done)
+		})
+		it('gets properties from config file', function(){
+			expect(config.get('framework')).to.equal('mocha')
+			expect(String(config.get('src_files'))).to.equal('impl.js,tests.js')
+		})
+	})
+
+	describe('read js config file', function(){
+		var config
+		beforeEach(function(done){
+			var progOptions = {
+				file: __dirname + '/testem.js'
 			}
 			config = new Config('dev', progOptions)
 			config.read(done)
@@ -217,8 +245,7 @@ describe('Config', function(){
 			])
 			config.getSrcFiles(function(err, files){
 				expect(files).to.deep.equal([
-					fileEntry('integration/browser_tests.bat'),
-					fileEntry('filewatcher_tests.js')
+					fileEntry('integration/browser_tests.bat')
 				])
 				done()
 			})
@@ -256,6 +283,19 @@ describe('Config', function(){
 				expect(files).to.deep.equal([
 					fileEntry('config_tests.js', ['data-foo="true"', 'data-bar']),
 					fileEntry('integration/browser_tests.bat')
+				])
+				done()
+			})
+		})
+		it('allows URLs', function(done){
+			config.set('src_files', [
+				'file://integration/*', 'http://codeorigin.jquery.com/jquery-2.0.3.min.js'
+			])
+			config.getSrcFiles(function(err, files){
+				expect(files).to.deep.equal([
+					fileEntry('integration/browser_tests.bat'),
+					fileEntry('integration/browser_tests.sh'),
+					fileEntry('http://codeorigin.jquery.com/jquery-2.0.3.min.js')
 				])
 				done()
 			})

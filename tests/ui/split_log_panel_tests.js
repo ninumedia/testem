@@ -1,7 +1,7 @@
 var expect = require('chai').expect
 var Backbone = require('backbone')
 var screen = require('./fake_screen')
-var SplitLogPanel = require('../../lib/ui/split_log_panel')
+var SplitLogPanel = require('../../lib/dev/ui/split_log_panel')
 var stub = require('bodydouble').stub
 var spy = require('ispy')
 
@@ -50,12 +50,35 @@ describe('SplitLogPanel', function(){
     })
     it('gives result when has results and all is true', function(){
       results.set('total', 1)
+      results.set('pending', 0)
       var tests = new Backbone.Collection([
         new Backbone.Model({ name: 'blah', passed: true })
       ])
       results.set('tests', tests)
       results.set('all', true)
       expect(panel.getResultsDisplayText().unstyled()).to.equal('✔ 1 tests complete.')
+    })
+    it('shows pending tests in yellow when has results, all is true, no tests failed and there are pending tests', function(){
+      results.set('total', 1)
+      results.set('pending', 1)
+      var tests = new Backbone.Collection([
+        new Backbone.Model({ name: 'blah', pending: true })
+      ])
+      results.set('tests', tests)
+      results.set('all', true)
+
+      var text = panel.getResultsDisplayText()
+
+      expect(text.children).to.have.length(2)
+
+      var resultText = text.children[0]
+      var pendingText = text.children[1]
+
+      expect(resultText.str).to.equal('✔ 1 tests complete (1 pending).')
+      expect(resultText.attrs.foreground).to.equal('cyan')
+
+      expect(pendingText.str).to.equal('\n\n[PENDING] blah')
+      expect(pendingText.attrs.foreground).to.equal('yellow')
     })
     it('shows "failed" when failure', function(){
       results.set('total', 1)
@@ -69,7 +92,7 @@ describe('SplitLogPanel', function(){
       ])
       results.set('tests', tests)
       results.set('all', true)
-      expect(panel.getResultsDisplayText().unstyled()).to.equal('blah\n    ✘ failed')
+      expect(panel.getResultsDisplayText().unstyled()).to.match(/blah\n    ✘ failed/)
     })
     it('shows the error message', function(){
       results.set('total', 1)
@@ -83,7 +106,7 @@ describe('SplitLogPanel', function(){
       ])
       results.set('tests', tests)
       results.set('all', true)
-      expect(panel.getResultsDisplayText().unstyled()).to.equal('blah\n    ✘ should not be null')
+      expect(panel.getResultsDisplayText().unstyled()).to.match(/blah\n    ✘ should not be null/)
     })
     it('shows the stacktrace', function(){
       results.set('total', 1)
@@ -93,7 +116,7 @@ describe('SplitLogPanel', function(){
           items: [ 
             {
               message: 'should not be null', passed: false, 
-              stacktrace: [
+              stack: [
                 'AssertionError: ',
                 '    at Module._compile (module.js:437:25)',
                 '    at Object.Module._extensions..js (module.js:467:10)'

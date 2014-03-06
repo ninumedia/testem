@@ -81,9 +81,12 @@ function patchSocketIOReconnect(){
 function getBrowserName(userAgent){
     var regexs = [
         /MS(?:(IE) (1?[0-9]\.[0-9]))/,
+        [/(OPR)\/([0-9]+\.[0-9]+)/, function(m){
+            return ['Opera', m[2]].join(' ')
+        }],
+        /(Opera).*Version\/([0-9]+\.[0-9]+)/,
         /(Chrome)\/([0-9]+\.[0-9]+)/,
         /(Firefox)\/([0-9a-z]+\.[0-9a-z]+)/,
-        /(Opera).*Version\/([0-9]+\.[0-9]+)/,
         /(PhantomJS)\/([0-9]+\.[0-9]+)/,
         [/(Android).*Version\/([0-9]+\.[0-9]+).*(Safari)/, function(m){
             return [m[1], m[3], m[2]].join(' ')
@@ -160,8 +163,10 @@ function initUI(){
 }
 
 function initTestFrameworkHooks(){
-    if (typeof jasmine === 'object'){
-        jasmineAdapter(socket)
+	if (typeof getJasmineRequireObj === 'function'){
+		jasmine2Adapter(socket)
+	}else if (typeof jasmine === 'object'){
+		jasmineAdapter(socket)
     }else if ((typeof mocha).match(/function|object/)){
         mochaAdapter(socket)
     }else if (typeof QUnit === 'object'){
@@ -176,7 +181,7 @@ var addListener = window.addEventListener ?
     function(obj, evt, cb){ obj.attachEvent('on' + evt, cb) }
 
 function getId(){
-    var m = location.href.match(/^.+\/([0-9]+)/)
+    var m = location.pathname.match(/^\/([0-9]+)/)
     return m ? m[1] : null
 }
 

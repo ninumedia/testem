@@ -7,9 +7,9 @@ Instructions
 ------------
 
 1. Get a [SauceLabs](https://saucelabs.com/) account.
-2. Create a file named `.saucelabs.json` in the top of your home directory. This JSON formatted file will contain 2 properties:
-    * **username** - your SauceLabs username
-    * **api_key** - your SauceLabs API/Access key.
-3. Install [saucelauncher](https://github.com/airportyh/saucelauncher) via `npm install saucelauncher -g`.
-4. Run `testem ci` to run it on all the listed browsers - see `testem launchers` for the full list.
-
+2. Install [saucie](https://github.com/igorlima/sauce-js-tests-integration) via `npm install saucie@0.1.0 -g`.
+3. Make sure Sauce credentials are set in env:
+    * **SAUCE_USERNAME** - your SauceLabs username
+    * **SAUCE_ACCESS_KEY** - your SauceLabs API/Access key.
+4. Run `testem ci --port 8080` to run it on all the listed browsers - see `testem launchers` for the full list.
+    * *It will take a while at the first time. This will only happen once to download the jar of Sauce Connect*
